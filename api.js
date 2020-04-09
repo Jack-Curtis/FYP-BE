@@ -1,6 +1,6 @@
 const SerialPort = require("serialport");
 const errorMessage = require("./errorMessages");
-const webSockettest = require("./webSockettest");
+const webSockettest = require("./webSocket");
 
 var message = [];
 

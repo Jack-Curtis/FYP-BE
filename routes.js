@@ -6,7 +6,7 @@ const Readline = require("@serialport/parser-readline");
 
 const api = require("./api");
 const errorMessage = require("./errorMessages");
-const webSockettest = require("./webSockettest");
+const webSockettest = require("./webSocket");
 
 const baudRate = 9600;
 var SERVER_PORT = 8080;
@@ -15,8 +15,6 @@ const paths = [];
 var parsers = {};
 var wss = new WebSocketServer({ port: SERVER_PORT }); // the webSocket server
 wss.on("connection", webSockettest.handleConnection);
-// wss.on("message", () => console.log("MESSAGE RECEIVED"));
-// wss.on("close", webSockettest.closeSocket);
 
 module.exports = function (app) {
   app.use(bodyParser.json());
@@ -25,12 +23,13 @@ module.exports = function (app) {
     api.getPortList().then((portList) => res.send(portList)); // Change this to a http response code
   });
 
-  // TODO: Add create parsers in her e
+  // TODO: Refactor everything to take out anything to do with responses etc.
+  // Could also make the functions suynchronous as I am not sure they need to be
+  // async anymore
   app.post("/connect", async (req, res) => {
     const path = req.body.device;
     const port = new SerialPort(path, { baudRate: baudRate });
     var parser = port.pipe(new Readline({ delimiter: "\r\n" }));
-    console.log("PAth=", path);
     paths.push(path);
     ports[path] = port;
     parsers[path] = parser;
@@ -48,7 +47,6 @@ module.exports = function (app) {
       delete ports[path];
       paths.pop();
     }
-    res.send([response]); // Change this to a http response code
   });
 
   app.post("/calibrate", async (req, res) => {
@@ -59,7 +57,6 @@ module.exports = function (app) {
           response = errorMessage.connectionError;
         });
     });
-    // res.send([response]); // Change this to a http response code
   });
 
   app.post("/disconnect", async (req, res) => {
@@ -70,8 +67,6 @@ module.exports = function (app) {
       if (response == errorMessage.portClosed) {
         delete ports[path];
       }
-
-      res.send([response]); // Change this to a http response code
     });
   });
 
