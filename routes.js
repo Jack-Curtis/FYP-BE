@@ -6,7 +6,7 @@ const Readline = require("@serialport/parser-readline");
 
 const api = require("./api");
 const errorMessage = require("./errorMessages");
-const webSockettest = require("./webSocket");
+const webSocket = require("./webSocket");
 
 const baudRate = 9600;
 var SERVER_PORT = 8080;
@@ -14,7 +14,7 @@ const ports = {};
 const paths = [];
 var parsers = {};
 var wss = new WebSocketServer({ port: SERVER_PORT }); // the webSocket server
-wss.on("connection", webSockettest.handleConnection);
+wss.on("connection", webSocket.handleConnection);
 
 module.exports = function (app) {
   app.use(bodyParser.json());

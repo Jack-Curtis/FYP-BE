@@ -1,6 +1,10 @@
 const SerialPort = require("serialport");
 const errorMessage = require("./errorMessages");
 const webSockettest = require("./webSocket");
+const json2csv = require("json2csv").parse;
+const fs = require("fs");
+
+const fields = ["Title"];
 
 var message = [];
 
@@ -75,6 +79,11 @@ async function stopData(ports, paths) {
       paths.forEach((path) => {
         var port = ports[path];
         port.write("Close");
+        var csv = json2csv({ message });
+        fs.writeFile("file.csv", csv, function (err) {
+          if (err) throw err;
+          console.log("file saved");
+        });
       });
     } catch (err) {
       console.log(err);
