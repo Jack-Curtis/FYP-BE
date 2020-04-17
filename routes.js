@@ -37,25 +37,20 @@ module.exports = function (app) {
     api.parseData(parsers[path]);
 
     console.log("About to connect");
-    var response = await api
-      .portConnect(ports[path], parsers[path], path)
-      .catch(() => {
-        response = errorMessage.connectionError;
-      });
-
-    if (response == errorMessage.portBusy) {
-      delete ports[path];
-      paths.pop();
-    }
+    await api.portConnect(ports[path], parsers[path], path).then((response) => {
+      if (response == errorMessage.portBusy) {
+        delete ports[path];
+        paths.pop();
+        res.status(500).send([response]);
+      } else {
+        res.status(200).send([response]);
+      }
+    });
   });
 
-  app.post("/calibrate", async (req, res) => {
-    paths.forEach(async function (path) {
-      var response = await api
-        .calibrate(ports[path], parsers[path])
-        .catch(() => {
-          response = errorMessage.connectionError;
-        });
+  app.post("/calibrate", async () => {
+    paths.forEach((path) => {
+      api.calibrate(ports[path], parsers[path]);
     });
   });
 
@@ -63,9 +58,12 @@ module.exports = function (app) {
     console.log("Disconnecting IMU");
     const path = req.body.device;
 
-    api.portDisconnect(ports[path]).then((response) => {
+    await api.portDisconnect(ports[path]).then((response) => {
       if (response == errorMessage.portClosed) {
         delete ports[path];
+        res.status(200).send([response]);
+      } else {
+        res.status(500).send([response]);
       }
     });
   });
