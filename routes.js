@@ -1,51 +1,46 @@
 "use strict";
 const bodyParser = require("body-parser");
-const SerialPort = require("serialport");
+// const SerialPort = require("serialport");
+// const Readline = require("@serialport/parser-readline");
 var WebSocketServer = require("ws").Server;
-const Readline = require("@serialport/parser-readline");
 
 const api = require("./api");
-const errorMessage = require("./errorMessages");
 const webSocket = require("./webSocket");
+const errorMessage = require("./errorMessages");
 
 const baudRate = 9600;
 var SERVER_PORT = 8080;
 const ports = {};
 const paths = [];
-var parsers = {};
+const parsers = {};
 var wss = new WebSocketServer({ port: SERVER_PORT }); // the webSocket server
 wss.on("connection", webSocket.handleConnection);
 
 module.exports = function (app) {
   app.use(bodyParser.json());
 
-  app.get("/init", async (req, res) => {
-    api.getPortList().then((portList) => res.send(portList)); // Change this to a http response code
+  app.get("/getports", async (req, res) => {
+    api.getPortList().then((portList) => res.send(portList));
   });
 
-  // TODO: Refactor everything to take out anything to do with responses etc.
-  // Could also make the functions suynchronous as I am not sure they need to be
-  // async anymore
   app.post("/connect", async (req, res) => {
-    const path = req.body.device;
-    const port = new SerialPort(path, { baudRate: baudRate });
-    var parser = port.pipe(new Readline({ delimiter: "\r\n" }));
+    let path = req.body.device;
+    let { port, parser } = api.createConnection(path, baudRate);
+
     paths.push(path);
     ports[path] = port;
     parsers[path] = parser;
 
-    api.parseData(parsers[path]);
-
-    console.log("About to connect");
-    await api.portConnect(ports[path], parsers[path], path).then((response) => {
-      if (response == errorMessage.portBusy) {
-        delete ports[path];
-        paths.pop();
-        res.status(500).send([response]);
-      } else {
-        res.status(200).send([response]);
-      }
-    });
+    api.parseData(parser, port);
+    await api
+      .portConnect(port, Object.keys(ports).length - 1)
+      .then((response) => {
+        if (response == errorMessage.connectionError) {
+          res.status(500).send([response]);
+        } else {
+          res.status(200).send([response]);
+        }
+      });
   });
 
   app.post("/calibrate", async () => {
@@ -59,8 +54,10 @@ module.exports = function (app) {
     const path = req.body.device;
 
     await api.portDisconnect(ports[path]).then((response) => {
+      console.log(response);
       if (response == errorMessage.portClosed) {
         delete ports[path];
+        delete parsers[path];
         res.status(200).send([response]);
       } else {
         res.status(500).send([response]);
@@ -68,18 +65,11 @@ module.exports = function (app) {
     });
   });
 
-  // TODO: Send 4 to the IMU to get data back
-  app.post("/collectdata", async (req, res) => {
-    var response = await api.collectData(ports, paths, parsers).catch(() => {
-      res.sendStatus(500);
-    });
-    res.status(200).send([response]); // Change this to a http response code
+  app.post("/startstream", async (req, res) => {
+    api.startStream(ports, paths);
   });
 
-  app.post("/stopdata", async (req, res) => {
-    var response = await api.stopData(ports, paths, parsers).catch(() => {
-      res.sendStatus(500);
-    });
-    res.status(200).send([response]); // Change this to a http response code
+  app.post("/stopstream", async (req, res) => {
+    api.stopStream(ports, paths);
   });
 };
