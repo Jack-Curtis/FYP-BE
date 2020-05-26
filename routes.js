@@ -1,7 +1,5 @@
 "use strict";
 const bodyParser = require("body-parser");
-// const SerialPort = require("serialport");
-// const Readline = require("@serialport/parser-readline");
 var WebSocketServer = require("ws").Server;
 
 const api = require("./api");
@@ -31,7 +29,8 @@ module.exports = function (app) {
     ports[path] = port;
     parsers[path] = parser;
 
-    api.parseData(parser, port);
+    api.initListeners(parser, port);
+
     await api
       .portConnect(port, Object.keys(ports).length - 1)
       .then((response) => {

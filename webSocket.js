@@ -1,7 +1,6 @@
 var connections = new Array();
 
 function handleConnection(client) {
-  // client.send("Connection established");
   connections.push(client);
 
   client.on("message", function (data) {

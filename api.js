@@ -72,7 +72,7 @@ function calibrate(port) {
   portWrite(port, "3");
 }
 
-function parseData(parser, port) {
+function initListeners(parser, port) {
   port.on("error", (err) => {
     webSocket.broadcastData("An error occurred");
     throw err;
@@ -149,6 +149,6 @@ module.exports = {
   portDisconnect,
   startStream,
   calibrate,
-  parseData,
+  initListeners,
   stopStream,
 };
