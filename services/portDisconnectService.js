@@ -1,3 +1,5 @@
+const errorMessage = require("../errorMessages");
+
 async function portDisconnect(port) {
   return new Promise((resolve) => {
     try {
@@ -12,4 +14,4 @@ async function portDisconnect(port) {
   });
 }
 
-export default portDisconnect;
+module.exports = { portDisconnect };

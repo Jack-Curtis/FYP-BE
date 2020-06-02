@@ -1,14 +1,15 @@
 const SerialPort = require("serialport");
+const errorMessages = require("../errorMessages");
 
-async function getPortList() {
+async function getPortListService() {
   return new Promise((resolve) => {
     SerialPort.list().then(
       (ports) => resolve(ports),
-      (err) => resolve(err)
+      (err) => resolve(errorMessages.cannotGetPorts)
     );
   });
 }
 
 module.exports = {
-  getPortList,
+  getPortListService,
 };

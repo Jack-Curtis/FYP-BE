@@ -1,9 +1,5 @@
 var message = [];
 
-function calibrateSensors(port) {
-  writeToPort(port, "3");
-}
-
 function startStream(ports, paths) {
   try {
     paths.forEach((path) => {

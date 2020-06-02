@@ -39,6 +39,7 @@ async function initialisePortListeners(port, parser) {
     });
 
     parser.on("data", (data) => {
+      console.log(data);
       message.push(data);
       ws.broadcastData(data);
     });

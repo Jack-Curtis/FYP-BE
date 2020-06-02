@@ -2,68 +2,78 @@
 const bodyParser = require("body-parser");
 var WebSocketServer = require("ws").Server;
 
-const api = require("../api");
-const constants = require("../constants");
-const portListService = require("../services/portListService");
-const connectionController = require("../controller/connectionController");
+// Import controllers
+const connectionController = require("../controllers/connectionController");
+const disconnectionController = require("../controllers/disconnectionController");
+const startStreamController = require("../controllers/startStreamController");
+const stopStreamController = require("../controllers/stopStreamController");
+const getPortListController = require("../controllers/getPortListController");
+
+// Import all the utilities
 const webSocket = require("../utilities/webSocket");
 const errorMessages = require("../errorMessages");
+const constants = require("../constants");
 
-var ports = {};
-var paths = [];
-var parsers = {};
+var devices = [];
 
-var wss = new WebSocketServer({ port: constants.SERVER_PORT }); // the webSocket server
+var wss = new WebSocketServer({ port: constants.SERVER_PORT });
 wss.on("connection", webSocket.handleConnection);
 
 module.exports = function (app) {
   app.use(bodyParser.json());
 
   app.get("/getports", async (req, res) => {
-    portListService.getPortList().then((portList) => res.send(portList));
+    let response = await getPortListController.getPortListController();
+
+    response === errorMessages.cannotGetPorts
+      ? res.status(500).send(response)
+      : res.status(200).send(response);
   });
 
   app.post("/connect", async (req, res) => {
     let path = req.body.device;
-    let response = await connectionController.connectionController(path, paths);
+    let response = await connectionController.connectionController(
+      path,
+      devices
+    );
 
     if (response === errorMessages.connectionError) {
       res.status(500).send([response]);
     } else {
-      paths.push(path);
-      ports[path] = response.port;
-      parsers[path] = response.parser;
+      devices[path] = { port: response.port, parser: response.parser };
       res.status(200).send(["Success"]);
     }
   });
 
-  app.post("/calibrate", async () => {
-    paths.forEach((path) => {
-      calibrate(ports[path], parsers[path]);
-    });
-  });
-
   app.post("/disconnect", async (req, res) => {
-    console.log("Disconnecting IMU");
     let path = req.body.device;
+    let response = await disconnectionController.disconnectionController(
+      devices[path]
+    );
 
-    await portDisconnect(ports[path]).then((response) => {
-      console.log(response);
-      if (response == portClosed) {
-        delete ports[path];
-        delete parsers[path];
-        res.status(200).send([response]);
-      } else {
-        res.status(500).send([response]);
-      }
-    });
+    if (response === errorMessages.portClosed) {
+      delete devices[path];
+      res.status(200).send([response]);
+    } else {
+      res.status(500).send([response]);
+    }
   });
 
   app.post("/startstream", async (req, res) => {
-    startStream(ports, paths);
+    let response = await startStreamController.startStreamController(devices);
+    console.log(response);
+
+    response === errorMessages.writeSuccess
+      ? res.status(200).send([response])
+      : res.status(500).send([response]);
   });
 
   app.post("/stopstream", async (req, res) => {
-    stopStream(ports, paths);
+    let response = await stopStreamController.stopStreamController(devices);
+    console.log(response);
+
+    response === errorMessages.writeSuccess
+      ? res.status(200).send([response])
+      : res.status(500).send([response]);
   });
 };

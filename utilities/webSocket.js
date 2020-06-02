@@ -15,7 +15,6 @@ function handleConnection(client) {
 }
 
 function broadcastData(data) {
-  console.log(data);
   for (myConnection in connections) {
     connections[myConnection].send(data);
   }

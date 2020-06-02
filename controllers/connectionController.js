@@ -2,7 +2,7 @@ const portConnectService = require("../services/portConnectService");
 const constants = require("../constants");
 const errorMessage = require("../errorMessages");
 
-async function connectionController(path, paths) {
+async function connectionController(path, devices) {
   let { port, parser } = await portConnectService.createConnection(
     path,
     constants.BAUDRATE
@@ -12,7 +12,7 @@ async function connectionController(path, paths) {
 
   let connectionStatus = await portConnectService.portConnect(
     port,
-    Object.keys(paths).length
+    Object.keys(devices).length
   );
 
   return connectionStatus === errorMessage.connectionError
